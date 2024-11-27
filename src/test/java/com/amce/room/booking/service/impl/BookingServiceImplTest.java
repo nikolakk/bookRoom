@@ -8,7 +8,6 @@ import com.amce.room.booking.model.Booking;
 import com.amce.room.booking.model.MeetingRoom;
 import com.amce.room.booking.repository.BookingRepository;
 import com.amce.room.booking.repository.MeetingRoomRepository;
-import com.amce.room.booking.service.BookingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,7 +16,10 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,20 +27,20 @@ import static org.mockito.Mockito.*;
 class BookingServiceImplTest {
 
     @InjectMocks
-    private BookingServiceImpl bookingService; // Service under test
+    private BookingServiceImpl bookingService;
     @Mock
-    private MeetingRoomRepository meetingRoomRepository; // Mocked dependency
+    private MeetingRoomRepository meetingRoomRepository;
     @Mock
-    private BookingRepository bookingRepository; // Mocked dependency
+    private BookingRepository bookingRepository;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this); // Initialize mocks
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
     void createBooking_Successful() {
-        // Arrange
+
         BookingRequest bookingRequest = new BookingRequest();
         bookingRequest.setRoomId(1L);
         bookingRequest.setEmployeeEmail("test@acme.com");
@@ -63,18 +65,17 @@ class BookingServiceImplTest {
         savedBooking.setTimeFrom(bookingRequest.getTimeFrom());
         savedBooking.setTimeTo(bookingRequest.getTimeTo());
 
-        when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking); // Mock save
+        when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
 
-        // Act
         BookingResponse result = bookingService.createBooking(bookingRequest);
 
-        // Assert
         assertNotNull(result);
         assertEquals(savedBooking.getDate(), result.getBookingDate());
         assertEquals(savedBooking.getRoom().getName(), result.getRoom());
         assertEquals(savedBooking.getEmployeeEmail(), result.getEmail());
         assertEquals(savedBooking.getTimeFrom(), result.getTimeFrom());
         assertEquals(savedBooking.getTimeTo(), result.getTimeTo());
+        assertEquals(savedBooking.getId(), result.getBookingId());
 
         verify(bookingRepository, times(1)).save(any(Booking.class));
     }
@@ -82,7 +83,7 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_InvalidDuration_ThrowsException() {
-        // Arrange
+
         BookingRequest bookingRequest = new BookingRequest();
         bookingRequest.setRoomId(1L);
         bookingRequest.setEmployeeEmail("test@acme.com");
@@ -93,7 +94,6 @@ class BookingServiceImplTest {
         MeetingRoom meetingRoom = getDefaultMeetingRoom();
         when(meetingRoomRepository.findById(any())).thenReturn(Optional.of(meetingRoom));
 
-        // Act & Assert
         GenericBookingException exception = assertThrows(
                 GenericBookingException.class,
                 () -> bookingService.createBooking(bookingRequest)
@@ -105,7 +105,7 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_OverlappingBookings_ThrowsException() {
-        // Arrange
+
         BookingRequest bookingRequest = new BookingRequest();
         bookingRequest.setRoomId(1L);
         bookingRequest.setEmployeeEmail("test@acme.com");
@@ -125,7 +125,6 @@ class BookingServiceImplTest {
                 bookingRequest.getTimeTo()
         )).thenReturn(Collections.singletonList(existingBooking)); // Mock overlapping booking
 
-        // Act & Assert
         GenericBookingException exception = assertThrows(
                 GenericBookingException.class,
                 () -> bookingService.createBooking(bookingRequest)
@@ -137,7 +136,7 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_InvalidTimeRange_ThrowsException() {
-        // Arrange
+
         BookingRequest bookingRequest = new BookingRequest();
         bookingRequest.setRoomId(1L);
         bookingRequest.setEmployeeEmail("test@acme.com");
@@ -147,9 +146,9 @@ class BookingServiceImplTest {
 
         MeetingRoom meetingRoom = getDefaultMeetingRoom();
         when(meetingRoomRepository.findById(any())).thenReturn(Optional.of(meetingRoom));
-        when( bookingRepository.findOverlappingBookings(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findOverlappingBookings(any(), any(), any(), any())).thenReturn(new ArrayList<>());
 
-        // Act & Assert
+
         GenericBookingException exception = assertThrows(
                 GenericBookingException.class,
                 () -> bookingService.createBooking(bookingRequest)
@@ -161,7 +160,7 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_DurationNotMultipleOfHour_ThrowsException() {
-        // Arrange
+
         BookingRequest bookingRequest = new BookingRequest();
         bookingRequest.setRoomId(1L);
         bookingRequest.setEmployeeEmail("test@acme.com");
@@ -172,7 +171,6 @@ class BookingServiceImplTest {
         MeetingRoom meetingRoom = getDefaultMeetingRoom();
         when(meetingRoomRepository.findById(any())).thenReturn(Optional.of(meetingRoom));
 
-        // Act & Assert
         GenericBookingException exception = assertThrows(
                 GenericBookingException.class,
                 () -> bookingService.createBooking(bookingRequest)
@@ -184,7 +182,6 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_RoomUnavailable_ThrowsException() {
-        // Arrange
         BookingRequest bookingRequest = new BookingRequest();
         bookingRequest.setRoomId(2L); // Non-existent room
         bookingRequest.setEmployeeEmail("test@acme.com");
@@ -194,7 +191,6 @@ class BookingServiceImplTest {
 
         when(meetingRoomRepository.findById(any())).thenReturn(Optional.empty());
 
-        // Act & Assert
         BookingNotFoundException exception = assertThrows(
                 BookingNotFoundException.class,
                 () -> bookingService.createBooking(bookingRequest)
@@ -206,71 +202,57 @@ class BookingServiceImplTest {
 
     @Test
     void getBookings_ReturnsAllBookings() {
-        // Arrange
-        List<Booking> mockBookings = getBookingList(); // Helper method
+        List<Booking> mockBookings = getBookingList();
         when(bookingRepository.findByRoomAndDate(any(), any())).thenReturn(mockBookings);
         MeetingRoom meetingRoom = getDefaultMeetingRoom();
         when(meetingRoomRepository.findById(any())).thenReturn(Optional.of(meetingRoom));
 
         LocalDate bookingDate = LocalDate.of(2024, 11, 27);
         Long roomId = 1L;
-        // Act
         List<BookingResponse> result = bookingService.getBookings(roomId, bookingDate);
 
-        // Assert
         assertNotNull(result);
         assertEquals(mockBookings.size(), result.size());
         assertEquals(mockBookings.get(0).getEmployeeEmail(), result.get(0).getEmail());
         assertEquals(mockBookings.get(0).getRoom().getName(), result.get(0).getRoom());
 
         verify(meetingRoomRepository, times(1)).findById(any());
-
     }
 
     @Test
     void getBookings_NoBookings_ReturnsEmptyList() {
-        // Arrange
         MeetingRoom meetingRoom = getDefaultMeetingRoom();
         when(meetingRoomRepository.findById(any())).thenReturn(Optional.of(meetingRoom));
         when(bookingRepository.findByRoomAndDate(any(), any())).thenReturn(new ArrayList<>());
 
-
         LocalDate bookingDate = LocalDate.of(2024, 11, 27);
         Long roomId = 1L;
-        // Act
         List<BookingResponse> result = bookingService.getBookings(roomId, bookingDate);
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
         verify(meetingRoomRepository, times(1)).findById(any());
         verify(bookingRepository, times(1)).findByRoomAndDate(any(), any());
-
     }
 
 
     @Test
     void cancelBooking_Successful() {
-        // Arrange
         Long bookingId = 1L;
         Booking booking =getDefaultBooking();
         booking.setId(bookingId);
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(getDefaultBooking()));
 
-        // Act
         bookingService.cancelBooking(bookingId);
 
-        // Assert
         verify(bookingRepository, times(1)).deleteById(any());
     }
 
     @Test
     void cancelBooking_BookingNotFound_ThrowsException() {
-        // Arrange
         Long bookingId = 1L;
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         BookingNotFoundException exception = assertThrows(
                 BookingNotFoundException.class,
                 () -> bookingService.cancelBooking(bookingId)
@@ -287,14 +269,11 @@ class BookingServiceImplTest {
         return meetingRoom;
     }
 
-
     private List<Booking> getBookingList(){
         List<Booking> bookings = new ArrayList<>();
 
         Booking booking = getDefaultBooking();
-
         bookings.add(booking);
-
         return bookings;
     }
 

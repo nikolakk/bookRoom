@@ -1,164 +1,217 @@
 package com.amce.room.booking.controllers;
 
 import com.amce.room.booking.exceptions.BookingNotFoundException;
+import com.amce.room.booking.exceptions.GenericBookingException;
 import com.amce.room.booking.model.Booking;
+import com.amce.room.booking.model.MeetingRoom;
 import com.amce.room.booking.service.BookingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Collections;
-import java.util.List;
+import java.util.Arrays;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(BookingController.class)
-class BookingControllerTest {
+public class BookingControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Mock
     private BookingService bookingService;
 
+    @InjectMocks
+    private BookingController bookingController;
+
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(bookingController).build();
     }
 
     @Test
-    void getBookings_Success() throws Exception {
-        // Arrange
-        Long roomId = 1L;
-        LocalDate date = LocalDate.of(2024, 11, 27);
-        BookingResponse mockResponse = new BookingResponse();
-        mockResponse.setRoom("Room 1");
-        mockResponse.setBookingDate(date);
-        mockResponse.setEmail("test@acme.com");
-        mockResponse.setTimeFrom(LocalTime.of(9, 0));
-        mockResponse.setTimeTo(LocalTime.of(10, 0));
+    public void testGetBookings() throws Exception {
 
-        when(bookingService.getBookings(roomId, date)).thenReturn(List.of(mockResponse));
+        Booking mockBooking = new Booking();
+        mockBooking.setId(1L);
+        MeetingRoom meetingRoom = new MeetingRoom(101L);
+        meetingRoom.setName("meeting room 1");
+        mockBooking.setRoom(meetingRoom);
+        mockBooking.setDate(LocalDate.of(2024, 11, 27));
+        mockBooking.setTimeFrom(LocalTime.of(9, 0));
+        mockBooking.setTimeTo(LocalTime.of(11, 0));
+        mockBooking.setEmployeeEmail("john.doe@example.com");
 
-        // Act & Assert
-        mockMvc.perform(get("/api/rooms/{roomId}/bookings", roomId)
-                        .param("date", date.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
+        BookingResponse bookingResponse = new BookingResponse();
+        bookingResponse.setBookingDate(LocalDate.of(2024, 11, 27));
+        bookingResponse.setRoom("meeting room 1");
+        bookingResponse.setBookingDate(LocalDate.of(2024, 11, 27));
+        bookingResponse.setTimeFrom(LocalTime.of(9, 0));
+        bookingResponse.setTimeTo(LocalTime.of(11, 0));
+        bookingResponse.setEmail("john.doe@example.com");
+        bookingResponse.setBookingId(1L);
+
+        when(bookingService.getBookings(anyLong(), any(LocalDate.class)))
+                .thenReturn(Arrays.asList(bookingResponse));
+
+        mockMvc.perform(get("/api/rooms/101/bookings?date=2024-11-27"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].room").value("Room 1"))
-                .andExpect(jsonPath("$[0].bookingDate").value(date.toString()))
-                .andExpect(jsonPath("$[0].email").value("test@acme.com"));
+                .andExpect(jsonPath("$[0].room").value("meeting room 1"))
+                .andExpect(jsonPath("$[0].bookingDate").value("2024-11-27"))
+                .andExpect(jsonPath("$[0].email").value("john.doe@example.com"))
+                .andExpect(jsonPath("$[0].timeFrom").value("09:00"))
+                .andExpect(jsonPath("$[0].timeTo").value("11:00"));
 
-        verify(bookingService, times(1)).getBookings(roomId, date);
+        verify(bookingService, times(1)).getBookings(anyLong(), any(LocalDate.class));
     }
 
+
     @Test
-    void getBookings_NoBookings() throws Exception {
-        // Arrange
-        Long roomId = 1L;
-        LocalDate date = LocalDate.of(2024, 11, 27);
-        when(bookingService.getBookings(roomId, date)).thenReturn(Collections.emptyList());
+    public void testGetBookings_noResult() throws Exception {
 
-        // Act & Assert
-        mockMvc.perform(get("/api/rooms/{roomId}/bookings", roomId)
-                        .param("date", date.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+        Booking mockBooking = new Booking();
+        mockBooking.setId(1L);
+        MeetingRoom meetingRoom = new MeetingRoom(101L);
+        meetingRoom.setName("meeting room 1");
+        mockBooking.setRoom(meetingRoom);
+        mockBooking.setDate(LocalDate.of(2024, 11, 27));
+        mockBooking.setTimeFrom(LocalTime.of(9, 0));
+        mockBooking.setTimeTo(LocalTime.of(11, 0));
+        mockBooking.setEmployeeEmail("john.doe@example.com");
 
-        verify(bookingService, times(1)).getBookings(roomId, date);
+        when(bookingService.getBookings(anyLong(), any(LocalDate.class))).thenThrow(BookingNotFoundException.class);
+
+        mockMvc.perform(get("/api/rooms/101/bookings?date=2024-11-27"))
+                .andExpect(status().isNoContent());
+
+        verify(bookingService, times(1)).getBookings(anyLong(), any(LocalDate.class));
     }
 
+
     @Test
-    void createBooking_Success() throws Exception {
-        // Arrange
-        BookingRequest request = new BookingRequest();
-        request.setRoomId(1L);
-        request.setEmployeeEmail("test@acme.com");
-        request.setBookingDate(LocalDate.of(2024, 11, 27));
-        request.setTimeFrom(LocalTime.of(9, 0));
-        request.setTimeTo(LocalTime.of(10, 0));
+    public void testCreateBooking() throws Exception {
+        Booking mockBooking = new Booking();
+        mockBooking.setId(1L);
+        MeetingRoom meetingRoom = new MeetingRoom(101L);
+        mockBooking.setRoom(meetingRoom);
+        mockBooking.setDate(LocalDate.of(2024, 11, 27));
+        mockBooking.setTimeFrom(LocalTime.of(9, 0));
+        mockBooking.setTimeTo(LocalTime.of(11, 0));
+        mockBooking.setEmployeeEmail("john.doe@example.com");
 
-        BookingResponse mockResponse = new BookingResponse();
-        mockResponse.setRoom("Room 1");
-        mockResponse.setBookingDate(request.getBookingDate());
-        mockResponse.setEmail(request.getEmployeeEmail());
-        mockResponse.setTimeFrom(request.getTimeFrom());
-        mockResponse.setTimeTo(request.getTimeTo());
+        BookingResponse bookingResponse = new BookingResponse();
+        bookingResponse.setBookingDate(LocalDate.of(2024, 11, 27));
+        bookingResponse.setRoom("meeting room 1");
+        bookingResponse.setBookingDate(LocalDate.of(2024, 11, 27));
+        bookingResponse.setTimeFrom(LocalTime.of(9, 0));
+        bookingResponse.setTimeTo(LocalTime.of(11, 0));
+        bookingResponse.setEmail("john.doe@example.com");
+        bookingResponse.setBookingId(1L);
 
-        when(bookingService.createBooking(any())).thenReturn(mockResponse);
+        when(bookingService.createBooking(any())).thenReturn(bookingResponse);
 
-        // Act & Assert
-        mockMvc.perform(post("/api/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                      "roomId": 1,
-                      "employeeEmail": "test@acme.com",
-                      "bookingDate": "2024-11-27",
-                      "timeFrom": "09:00",
-                      "timeTo": "10:00"
-                    }
-                    """))
+        String bookingRequestJson = "{\"roomId\":101,\"date\":\"2024-11-27\"}";
+
+        mockMvc.perform(post("/api/create/booking")
+                        .contentType("application/json")
+                        .content(bookingRequestJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.room").value("Room 1"))
-                .andExpect(jsonPath("$.bookingDate").value("2024-11-27"));
+                .andExpect(jsonPath("$.room").value("meeting room 1"))
+                .andExpect(jsonPath("$.bookingDate").value("2024-11-27"))
+                .andExpect(jsonPath("$.email").value("john.doe@example.com"))
+                .andExpect(jsonPath("$.timeFrom").value("09:00"))
+                .andExpect(jsonPath("$.timeTo").value("11:00"));
+
+        verify(bookingService, times(1)).createBooking(any());
+    }
+
+
+    @Test
+    public void testCreateBooking_GenericBookingException() throws Exception {
+        Booking mockBooking = new Booking();
+        mockBooking.setId(1L);
+        MeetingRoom meetingRoom = new MeetingRoom(101L);
+        mockBooking.setRoom(meetingRoom);
+        mockBooking.setDate(LocalDate.of(2024, 11, 27));
+        mockBooking.setTimeFrom(LocalTime.of(9, 0));
+        mockBooking.setTimeTo(LocalTime.of(11, 0));
+        mockBooking.setEmployeeEmail("john.doe@example.com");
+
+        when(bookingService.createBooking(any())).thenThrow(GenericBookingException.class);
+
+        String bookingRequestJson = "{\"roomId\":101,\"date\":\"2024-11-27\"}";
+
+        mockMvc.perform(post("/api/create/booking")
+                        .contentType("application/json")
+                        .content(bookingRequestJson))
+                .andExpect(status().isBadRequest());
 
         verify(bookingService, times(1)).createBooking(any());
     }
 
     @Test
-    void createBooking_ValidationFailure() throws Exception {
-        // Act & Assert
-        mockMvc.perform(post("/api/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                      "roomId": 1
-                    }
-                    """)) // Missing fields
+    public void testCreateBooking_BookingNotFoundException() throws Exception {
+        Booking mockBooking = new Booking();
+        mockBooking.setId(1L);
+        MeetingRoom meetingRoom = new MeetingRoom(101L);
+        mockBooking.setRoom(meetingRoom);
+        mockBooking.setDate(LocalDate.of(2024, 11, 27));
+        mockBooking.setTimeFrom(LocalTime.of(9, 0));
+        mockBooking.setTimeTo(LocalTime.of(11, 0));
+        mockBooking.setEmployeeEmail("john.doe@example.com");
+
+        when(bookingService.createBooking(any())).thenThrow(BookingNotFoundException.class);
+
+        String bookingRequestJson = "{\"roomId\":101,\"date\":\"2024-11-27\"}";
+
+        mockMvc.perform(post("/api/create/booking")
+                        .contentType("application/json")
+                        .content(bookingRequestJson))
                 .andExpect(status().isBadRequest());
 
-        verify(bookingService, never()).createBooking(any());
+        verify(bookingService, times(1)).createBooking(any());
     }
-
-
     @Test
-    void cancelBooking_Success() throws Exception {
-        // Arrange
-        Long bookingId = 1L;
-        doNothing().when(bookingService).cancelBooking(bookingId);
+    public void testCancelBooking_Success() throws Exception {
+        doNothing().when(bookingService).cancelBooking(anyLong());
 
-        // Act & Assert
-        mockMvc.perform(delete("/api/booking/{id}", bookingId))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/booking/1"))
+                .andExpect(status().isOk());
 
-        verify(bookingService, times(1)).cancelBooking(bookingId);
+        verify(bookingService, times(1)).cancelBooking(1L);
     }
 
     @Test
-    void cancelBooking_NotFound() throws Exception {
-        // Arrange
-        Long bookingId = 1L;
-        doThrow(new BookingNotFoundException("Booking not found"))
-                .when(bookingService).cancelBooking(bookingId);
+    public void testCancelBooking_NotFound() throws Exception {
+        doThrow(new BookingNotFoundException("Booking not found")).when(bookingService).cancelBooking(anyLong());
 
-        // Act & Assert
-        mockMvc.perform(delete("/api/booking/{id}", bookingId))
+        mockMvc.perform(delete("/api/booking/1"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Booking not found"));
 
-        verify(bookingService, times(1)).cancelBooking(bookingId);
+        verify(bookingService).cancelBooking(1L);
+    }
+
+    @Test
+    public void testCancelBooking_GenericError() throws Exception {
+        doThrow(new GenericBookingException("Generic error")).when(bookingService).cancelBooking(anyLong());
+
+        mockMvc.perform(delete("/api/booking/1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Generic error"));
+
+        verify(bookingService).cancelBooking(1L);
     }
 }

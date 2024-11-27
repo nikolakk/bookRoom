@@ -11,7 +11,6 @@ public class BookingRequest {
     private LocalTime timeFrom;
     private LocalTime timeTo;
 
-    // Getters and Setters
     public Long getRoomId() {
         return roomId;
     }
