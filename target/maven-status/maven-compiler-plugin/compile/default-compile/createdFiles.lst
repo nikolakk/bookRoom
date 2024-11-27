@@ -1,0 +1,15 @@
+com\amce\room\booking\converters\BookingConverter.class
+com\amce\room\booking\controllers\BookingRequest.class
+com\amce\room\booking\service\impl\BookingServiceImpl.class
+com\amce\room\booking\controllers\BookingResponse.class
+com\amce\room\booking\repository\BookingRepository.class
+com\amce\room\booking\repository\impl\BookingRepositoryCustomImpl.class
+com\amce\room\booking\repository\MeetingRoomRepository.class
+com\amce\room\booking\service\BookingService.class
+com\amce\room\booking\model\Booking.class
+com\amce\room\booking\BookingApplication.class
+com\amce\room\booking\exceptions\GenericBookingException.class
+com\amce\room\booking\model\MeetingRoom.class
+com\amce\room\booking\controllers\BookingController.class
+com\amce\room\booking\exceptions\BookingNotFoundException.class
+com\amce\room\booking\repository\BookingRepositoryCustom.class
