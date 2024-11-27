@@ -4,7 +4,6 @@ import com.amce.room.booking.controllers.BookingRequest;
 import com.amce.room.booking.controllers.BookingResponse;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 

@@ -15,6 +15,7 @@ public class BookingConverter {
             bookingResponse.setRoom(booking.getRoom().getName());
             bookingResponse.setTimeFrom(booking.getTimeFrom());
             bookingResponse.setTimeTo(booking.getTimeTo());
+            bookingResponse.setBookingId(booking.getId());
         }
         return bookingResponse;
     }

@@ -1,0 +1,109 @@
+{
+	"info": {
+		"_postman_id": "86a7ea93-ac5f-4f72-a612-c4323725e288",
+		"name": "Booking",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Booking for a room",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/rooms/1/bookings?date=2024-11-26",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"rooms",
+						"1",
+						"bookings"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2024-11-26"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a booking",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"roomId\": 1,\r\n    \"employeeEmail\": \"john.doe@example.com\",\r\n    \"bookingDate\": \"2024-11-26\",\r\n    \"timeFrom\": \"13:30\",\r\n    \"timeTo\": \"14:36\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/create/booking",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"create",
+						"booking"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cancel a Booking",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "password@123",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "myUser",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/booking/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"booking",
+						"1"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

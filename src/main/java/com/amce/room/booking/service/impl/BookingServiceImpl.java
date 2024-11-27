@@ -87,7 +87,7 @@ public class BookingServiceImpl implements BookingService {
     public void cancelBooking(Long bookingId) {
         Optional<Booking> optionalBooking = bookingRepository.findById(bookingId);
 
-        if (!optionalBooking.isPresent()) {
+        if (optionalBooking.isEmpty()) {
             throw new BookingNotFoundException("Booking with ID " + bookingId + " not found.");
         }
 
